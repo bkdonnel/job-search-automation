@@ -24,7 +24,32 @@ companies:
     board_type: greenhouse
     board_token: octave
 
+  - name: Rockstar Games
+    board_type: greenhouse
+    board_token: rockstargames
+
+  - name: Anduril Industries
+    board_type: greenhouse
+    board_token: andurilindustries
+
+  # Lever boards
+  - name: Included Health
+    board_type: lever
+    board_token: includedhealth
+
+  - name: Bluesight
+    board_type: lever
+    board_token: bluesight
+
   # Ashby boards
+  - name: Acorns
+    board_type: ashby
+    board_token: acorns
+
+  - name: Hims & Hers
+    board_type: ashby
+    board_token: hims-and-hers
+
   - name: Linear
     board_type: ashby
     board_token: linear
@@ -36,3 +61,7 @@ companies:
   - name: Bestow
     board_type: ashby
     board_token: bestow
+
+  - name: Sardine
+    board_type: ashby
+    board_token: sardine

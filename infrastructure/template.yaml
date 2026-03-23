@@ -80,6 +80,13 @@ Resources:
               MaximumRetryAttempts: 2
               MaximumEventAgeInSeconds: 300
 
+  # ── CloudWatch Logs ───────────────────────────────────────────────────────
+  JobSearchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/job-search-automation
+      RetentionInDays: 30
+
 Outputs:
   FunctionArn:
     Description: Lambda function ARN
