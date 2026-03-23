@@ -1,0 +1,38 @@
+companies:
+  # Greenhouse boards
+  - name: Stripe
+    board_type: greenhouse
+    board_token: stripe
+
+  - name: Airbnb
+    board_type: greenhouse
+    board_token: airbnb
+
+  - name: Pandadoc
+    board_type: greenhouse
+    board_token: pandadoc
+
+  - name: Splash Financial
+    board_type: greenhouse
+    board_token: splashfinancial
+
+  - name: Calm
+    board_type: greenhouse
+    board_token: calm
+
+  - name: Octave Health
+    board_type: greenhouse
+    board_token: octave
+
+  # Ashby boards
+  - name: Linear
+    board_type: ashby
+    board_token: linear
+
+  - name: Vercel
+    board_type: ashby
+    board_token: vercel
+
+  - name: Bestow
+    board_type: ashby
+    board_token: bestow

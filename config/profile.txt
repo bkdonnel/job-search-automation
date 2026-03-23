@@ -1,0 +1,33 @@
+Data professional with 7+ years of experience transforming complex data into actionable business insights across healthcare and fintech environments. Strong technical expertise in SQL, Python, dbt, Snowflake, and Airflow. MBA in Business Analytics from UC Irvine.
+
+Technical skills: SQL, Python, dbt, Apache Airflow, Snowflake, PostgreSQL, Tableau, Sigma, Streamlit, AWS, GitHub, CI/CD, PySpark, Delta Lake, Databricks
+
+Work experience:
+
+Senior Analyst at RIS Rx (Jan 2026 – Present, Irvine CA — pharma/healthcare):
+- Designed and maintain 3 client-facing Sigma dashboards backed by PostgreSQL for pharmaceutical clients
+- Contributed to data model design for a Snowflake migration
+- Developed complex multi-CTE SQL queries for claims analysis, leading to $150K in revenue
+
+Senior Data Analyst at Experian (Jul 2021 – Nov 2024, Costa Mesa CA — fintech/credit):
+- Defined 10+ KPIs with Product and Engineering, built Tableau dashboards for business insights
+- Designed scalable ELT pipelines using Apache Airflow and SQL, integrating 8+ data sources, reducing latency by 45%
+- Supported A/B testing on core product features, generating 4% lift in conversion rate
+- Performed user funnel analysis leading to 4% lift in monthly active users
+- Partnered with Data Engineering to design and document new data models
+- Mentored two junior data analysts
+
+Finance Data Analyst at Humana (Dec 2016 – Jul 2021, Irvine CA — healthcare/Medicare):
+- Refactored complex SQL queries and built reusable CTEs and views, reducing query times by 35%
+- Built automated BI dashboards and reporting pipelines, cutting monthly reporting time by 40%
+- Analyzed claims and provider-level data to surface Medicare payment anomalies, saving $720K annually
+
+Personal projects:
+- Stock Market Pipeline: end-to-end pipeline with Polygon.io, Databricks (PySpark, Delta Lake), Snowflake, medallion architecture, Streamlit dashboard
+- Spotify Listening History: dbt data models and tests, Streamlit dashboard
+- Whoop Analytics: Python + Snowflake + dbt Core + Docker + Airflow pipeline, Streamlit dashboard
+
+Certifications: Data Engineering Bootcamp (DataExpert.io, 2025)
+Education: MBA Business Analytics (UC Irvine), BA Economics (UC Riverside)
+
+Looking for: Data Analyst, Senior Data Analyst, Analytics Engineer, Senior Analytics Engineer, or Data Engineer roles. Prefer remote or onsite/hybrid near Irvine, CA or San Diego, CA. Strongest in SQL, dbt, Snowflake, and Python-based pipelines. Interested in fintech, healthcare, and tech companies with strong data culture.
