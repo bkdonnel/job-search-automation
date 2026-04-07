@@ -76,6 +76,27 @@ add-slack-webhook:
 		--overwrite \
 		--region $(REGION)
 
+add-exa-key:
+	@read -p "Exa API key: " key && \
+	aws ssm put-parameter \
+		--name /jobsearch/exa_key \
+		--value "$$key" \
+		--type SecureString \
+		--overwrite \
+		--region $(REGION)
+
+add-gmail-password:
+	@read -p "Gmail App Password (16 chars, no spaces): " pwd && \
+	aws ssm put-parameter \
+		--name /jobsearch/gmail_password \
+		--value "$$pwd" \
+		--type SecureString \
+		--overwrite \
+		--region $(REGION)
+
+auth-google:
+	python scripts/auth_google.py
+
 # ── Add a company (reminder) ──────────────────────────────────────────────
 
 add-company:

@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "job-search": {
+      "command": "python3",
+      "args": ["mcp_server.py"],
+      "cwd": "/Users/bryandonnelly/Documents/GitHub/job-search-automation"
+    },
+    "exa": {
+      "command": "npx",
+      "args": ["-y", "exa-mcp-server"]
+    }
+  }
+}
