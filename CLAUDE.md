@@ -189,6 +189,30 @@ Runtime: Python 3.12
 - **AWS:** ~$1.20/month outside free tier (dominated by Lambda execution time). DynamoDB on PAY_PER_REQUEST, CloudWatch logs with 30-day retention.
 - **Exa:** Free tier — 1,000 searches/month.
 
+## Potential Improvements (from ai-application-october-2025 repo)
+
+### Idea 1: Semantic Embedding-Based Job Matching
+Instead of (or before) calling gpt-4o-mini, use OpenAI embeddings to score job-profile similarity. The approach:
+1. At deploy time, generate an embedding of `config/profile.txt` and store it in SSM
+2. In Lambda, for each job that passes the keyword filter, generate an embedding of `description_text`
+3. Compute cosine similarity in Python — no external service needed
+4. Use the similarity score as a fast pre-filter: only send high-similarity jobs to gpt-4o-mini
+
+**No vector database needed.** DynamoDB can store the embedding vectors as a list attribute, and cosine similarity is a simple dot product computed in-memory in Lambda. The profile embedding lives in SSM and is loaded once per Lambda cold start.
+
+**Cost impact: near zero.** OpenAI `text-embedding-3-small` costs $0.02 per 1M tokens. A job description is ~500 tokens, so each embedding costs ~$0.000010 — about 20x cheaper than a gpt-4o-mini call. If this pre-filter eliminates even 30% of gpt-4o-mini calls, it saves money overall. Total embedding cost would be well under $0.50/month.
+
+**Main benefit:** More nuanced matching than keyword filtering but cheaper than AI evaluation. Could catch good matches that keyword filtering misses, and skip borderline ones before they hit gpt-4o-mini.
+
+### Idea 2: LLM Cost Tracking per Lambda Invocation
+Add a middleware/wrapper around every OpenAI call that logs token counts and estimated cost to CloudWatch. Would give visibility into actual spend per run rather than rough estimates. Implementation: wrap `evaluator.py` to capture `usage` from the OpenAI response object and emit a structured CloudWatch log line.
+
+### Idea 3: Prompt Optimization with DSPy
+Build a small labeled dataset of jobs (apply/skip ground truth from past Slack notifications) and use DSPy's BootstrapFewShot or MIPRO optimizer to auto-tune the gpt-4o-mini evaluation prompt in `evaluator.py`. Could meaningfully improve verdict accuracy without manual prompt tweaking.
+
+### Idea 4: Automated PR Review via GitHub Actions
+Add a `.github/workflows/llm-code-review.yml` workflow that triggers on pull requests and uses GPT-4 to review changes before deploy. Useful catch for issues in Lambda code changes (e.g. broken filter logic, bad DynamoDB writes) before they hit production.
+
 ## Known Issues
 - **Linear, Vercel (Ashby)** — returning 0 jobs. APIs respond with 200 but no postings. Tokens are valid; these companies may simply not have open roles at the moment.
 - **Notion, Rippling, Figma** — removed from watchlist. Were returning 404s (stale board tokens). If re-adding, find updated tokens from their careers page URLs.

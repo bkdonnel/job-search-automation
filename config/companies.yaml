@@ -1,247 +1,262 @@
 companies:
-  # Greenhouse boards
-  - name: Stripe
-    board_type: greenhouse
-    board_token: stripe
-
-  - name: Airbnb
-    board_type: greenhouse
-    board_token: airbnb
-
-  - name: Pandadoc
-    board_type: greenhouse
-    board_token: pandadoc
-
-  - name: Datakind
-    board_type: greenhouse
-    board_token: datakindinc
-
-  - name: Splash Financial
-    board_type: greenhouse
-    board_token: splashfinancial
-
-  - name: Calm
-    board_type: greenhouse
-    board_token: calm
-
-  - name: Octave Health
-    board_type: greenhouse
-    board_token: octave
-
-  - name: Rockstar Games
-    board_type: greenhouse
-    board_token: rockstargames
-
-  - name: Fleetio
-    board_type: greenhouse
-    board_token: fleetio
-
-  - name: Anduril Industries
-    board_type: greenhouse
-    board_token: andurilindustries
-
-  - name: SimplePractice
-    board_type: greenhouse
-    board_token: simplepractice55
-
-  - name: ShopMy
-    board_type: greenhouse
-    board_token: shopmy
-
-  - name: GitLab
-    board_type: greenhouse
-    board_token: gitlab
-
-  - name: Omada Health
-    board_type: greenhouse
-    board_token: omadahealth
-
-  - name: Firsthand Health
-    board_type: greenhouse
-    board_token: firsthand
-
-  - name: SmarterDx
-    board_type: greenhouse
-    board_token: smarterdx
-
-  - name: Scopely
-    board_type: greenhouse
-    board_token: scopely
-
-  - name: Spring Health
-    board_type: greenhouse
-    board_token: springhealth66
-
-  - name: Viant Technology
-    board_type: greenhouse
-    board_token: vianttechnology
-
-  - name: Tebra
-    board_type: greenhouse
-    board_token: tebra
-
-  - name: Octus
-    board_type: greenhouse
-    board_token: octus
-
-  - name: Cohere Health
-    board_type: greenhouse
-    board_token: coherehealth
-
-  - name: Array
-    board_type: greenhouse
-    board_token: array
-
-  - name: Instacart
-    board_type: greenhouse
-    board_token: instacart
-
-  - name: Oscar Health
-    board_type: greenhouse
-    board_token: oscar
-
-  - name: Thrive Market
-    board_type: greenhouse
-    board_token: thrivemarket
-
-  - name: Cedar
-    board_type: greenhouse
-    board_token: careportalinc
-
-  - name: Flume Health
-    board_type: greenhouse
-    board_token: flumehealth
-
-  - name: MongoDB
-    board_type: greenhouse
-    board_token: mongodb
-
-  - name: Babylist
-    board_type: greenhouse
-    board_token: babylist
-
-  - name: dbt Labs
-    board_type: greenhouse
-    board_token: dbtlabsinc
-
-  - name: HopSkipDrive
-    board_type: greenhouse
-    board_token: hopskipdrive
-
-  - name: Nextdoor
-    board_type: greenhouse
-    board_token: nextdoor
-
-  # Lever boards
-  - name: Included Health
-    board_type: lever
-    board_token: includedhealth
-
-  - name: Bluesight
-    board_type: lever
-    board_token: bluesight
-
-  - name: Lumin Digital
-    board_type: lever
-    board_token: LuminDigital
-
-  - name: Spreedly
-    board_type: lever
-    board_token: spreedly
-
-  - name: Arcadia
-    board_type: lever
-    board_token: arcadia
-
-  - name: FloQast
-    board_type: lever
-    board_token: floqast
-
-  - name: Lyra Health
-    board_type: lever
-    board_token: lyrahealth
-
-  # Ashby boards
-  - name: Acorns
-    board_type: ashby
-    board_token: acorns
-
-  - name: Hims & Hers
-    board_type: ashby
-    board_token: hims-and-hers
-
-  - name: Linear
-    board_type: ashby
-    board_token: linear
-
-  - name: Vercel
-    board_type: ashby
-    board_token: vercel
-
-  - name: Bestow
-    board_type: ashby
-    board_token: bestow
-
-  - name: Sardine
-    board_type: ashby
-    board_token: sardine
-
-  - name: OnePay
-    board_type: ashby
-    board_token: oneapp
-
-  - name: Rula
-    board_type: ashby
-    board_token: rula
-
-  - name: Flock Safety
-    board_type: ashby
-    board_token: Flock%20Safety
-
-  - name: XBOW
-    board_type: ashby
-    board_token: xbowcareers
-
-  - name: Scribd
-    board_type: ashby
-    board_token: ScribdInc
-
-  - name: Monarch Money
-    board_type: ashby
-    board_token: monarchmoney
-
-  - name: Kraken
-    board_type: ashby
-    board_token: kraken.com
-
-  - name: Vanta
-    board_type: ashby
-    board_token: vanta
-
-  - name: Talkiatry
-    board_type: ashby
-    board_token: talkiatry
-
-  - name: Forward Financing
-    board_type: ashby
-    board_token: Forward%20Financing
-
-  - name: Ontic
-    board_type: ashby
-    board_token: ontic
-
-  - name: Docker
-    board_type: ashby
-    board_token: docker
-
-  - name: Freshpaint
-    board_type: ashby
-    board_token: freshpaint
-
-  - name: Whatnot
-    board_type: ashby
-    board_token: whatnot
-
-  - name: AirGarage
-    board_type: ashby
-    board_token: airgarage
+- name: Stripe
+  board_type: greenhouse
+  board_token: stripe
+- name: Airbnb
+  board_type: greenhouse
+  board_token: airbnb
+- name: Pandadoc
+  board_type: greenhouse
+  board_token: pandadoc
+- name: Datakind
+  board_type: greenhouse
+  board_token: datakindinc
+- name: Splash Financial
+  board_type: greenhouse
+  board_token: splashfinancial
+- name: Calm
+  board_type: greenhouse
+  board_token: calm
+- name: Octave Health
+  board_type: greenhouse
+  board_token: octave
+- name: Rockstar Games
+  board_type: greenhouse
+  board_token: rockstargames
+- name: Fleetio
+  board_type: greenhouse
+  board_token: fleetio
+- name: Anduril Industries
+  board_type: greenhouse
+  board_token: andurilindustries
+- name: SimplePractice
+  board_type: greenhouse
+  board_token: simplepractice55
+- name: ShopMy
+  board_type: greenhouse
+  board_token: shopmy
+- name: GitLab
+  board_type: greenhouse
+  board_token: gitlab
+- name: Omada Health
+  board_type: greenhouse
+  board_token: omadahealth
+- name: Firsthand Health
+  board_type: greenhouse
+  board_token: firsthand
+- name: SmarterDx
+  board_type: greenhouse
+  board_token: smarterdx
+- name: Scopely
+  board_type: greenhouse
+  board_token: scopely
+- name: Spring Health
+  board_type: greenhouse
+  board_token: springhealth66
+- name: Viant Technology
+  board_type: greenhouse
+  board_token: vianttechnology
+- name: Tebra
+  board_type: greenhouse
+  board_token: tebra
+- name: Octus
+  board_type: greenhouse
+  board_token: octus
+- name: Cohere Health
+  board_type: greenhouse
+  board_token: coherehealth
+- name: Array
+  board_type: greenhouse
+  board_token: array
+- name: Instacart
+  board_type: greenhouse
+  board_token: instacart
+- name: Oscar Health
+  board_type: greenhouse
+  board_token: oscar
+- name: Thrive Market
+  board_type: greenhouse
+  board_token: thrivemarket
+- name: Cedar
+  board_type: greenhouse
+  board_token: careportalinc
+- name: Flume Health
+  board_type: greenhouse
+  board_token: flumehealth
+- name: MongoDB
+  board_type: greenhouse
+  board_token: mongodb
+- name: Babylist
+  board_type: greenhouse
+  board_token: babylist
+- name: dbt Labs
+  board_type: greenhouse
+  board_token: dbtlabsinc
+- name: HopSkipDrive
+  board_type: greenhouse
+  board_token: hopskipdrive
+- name: Nextdoor
+  board_type: greenhouse
+  board_token: nextdoor
+- name: Machinify
+  board_type: greenhouse
+  board_token: machinifyinc
+- name: InStride
+  board_type: greenhouse
+  board_token: instride
+- name: Sorcero
+  board_type: greenhouse
+  board_token: sorcero
+- name: Axios
+  board_type: greenhouse
+  board_token: axios
+- name: dv01
+  board_type: greenhouse
+  board_token: dv01
+- name: Included Health
+  board_type: lever
+  board_token: includedhealth
+- name: Bluesight
+  board_type: lever
+  board_token: bluesight
+- name: Lumin Digital
+  board_type: lever
+  board_token: LuminDigital
+- name: Spreedly
+  board_type: lever
+  board_token: spreedly
+- name: Arcadia
+  board_type: lever
+  board_token: arcadia
+- name: DeleteMe
+  board_type: lever
+  board_token: deleteme
+- name: FloQast
+  board_type: lever
+  board_token: floqast
+- name: Lyra Health
+  board_type: lever
+  board_token: lyrahealth
+- name: Acorns
+  board_type: ashby
+  board_token: acorns
+- name: Hims & Hers
+  board_type: ashby
+  board_token: hims-and-hers
+- name: Linear
+  board_type: ashby
+  board_token: linear
+- name: Vercel
+  board_type: ashby
+  board_token: vercel
+- name: Bestow
+  board_type: ashby
+  board_token: bestow
+- name: Sardine
+  board_type: ashby
+  board_token: sardine
+- name: OnePay
+  board_type: ashby
+  board_token: oneapp
+- name: Rula
+  board_type: ashby
+  board_token: rula
+- name: Flock Safety
+  board_type: ashby
+  board_token: Flock%20Safety
+- name: XBOW
+  board_type: ashby
+  board_token: xbowcareers
+- name: Scribd
+  board_type: ashby
+  board_token: ScribdInc
+- name: Monarch Money
+  board_type: ashby
+  board_token: monarchmoney
+- name: Kraken
+  board_type: ashby
+  board_token: kraken.com
+- name: Vanta
+  board_type: ashby
+  board_token: vanta
+- name: Talkiatry
+  board_type: ashby
+  board_token: talkiatry
+- name: Forward Financing
+  board_type: ashby
+  board_token: Forward%20Financing
+- name: Ontic
+  board_type: ashby
+  board_token: ontic
+- name: Docker
+  board_type: ashby
+  board_token: docker
+- name: Freshpaint
+  board_type: ashby
+  board_token: freshpaint
+- name: Whatnot
+  board_type: ashby
+  board_token: whatnot
+- name: Kin Insurance
+  board_type: ashby
+  board_token: kin
+- name: Andela
+  board_type: ashby
+  board_token: andela
+- name: Magic School
+  board_type: ashby
+  board_token: magicschool
+- name: AirGarage
+  board_type: ashby
+  board_token: airgarage
+- name: Goody
+  board_type: ashby
+  board_token: goody
+- name: Risk Labs
+  board_type: ashby
+  board_token: risklabs
+- name: A Place for Mom
+  board_type: ashby
+  board_token: a-place-for-mom
+- name: Natera
+  board_type: greenhouse
+  board_token: natera
+- name: Papa
+  board_type: greenhouse
+  board_token: papa
+- name: MacroHealth
+  board_type: greenhouse
+  board_token: macrohealth
+- name: NewtonX
+  board_type: ashby
+  board_token: newtonx
+- name: Coalition
+  board_type: greenhouse
+  board_token: coalition
+- name: Second Dinner
+  board_type: ashby
+  board_token: SecondDinner
+- name: Clover Health
+  board_type: greenhouse
+  board_token: cloverhealth
+- name: YipitData
+  board_type: greenhouse
+  board_token: yipitdata
+- name: Patient Point
+  board_type: greenhouse
+  board_token: patientpoint
+- name: Midi Health
+  board_type: greenhouse
+  board_token: midihealth
+- name: Khan Academy
+  board_type: greenhouse
+  board_token: khanacademy
+- name: Effectual
+  board_type: greenhouse
+  board_token: effectual
+- name: Scan.com
+  board_type: ashby
+  board_token: scan-com
+- name: Loop Returns
+  board_type: lever
+  board_token: loopreturns
