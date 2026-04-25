@@ -13,6 +13,7 @@ from .boards.greenhouse import GreenhouseClient
 from .boards.lever import LeverClient
 from .boards.ashby import AshbyClient
 from .database import is_seen, save_job, update_stage, save_evaluation
+from .embedder import score_job
 from .evaluator import evaluate
 from .filter import keyword_filter
 from .models import Job
@@ -26,6 +27,8 @@ _CLIENTS = {
     "lever": LeverClient,
     "ashby": AshbyClient,
 }
+
+EMBEDDING_THRESHOLD = 0.35
 
 _secrets_loaded = False
 
@@ -109,6 +112,19 @@ def main(event: dict[str, Any], context: Any) -> dict[str, Any]:
         # Stage 2: AI evaluation
         for job in candidates:
             update_stage(job.job_id, "keyword_pass")
+
+            try:
+                sim = score_job(job.description_text)
+                logger.info("Embedding score for '%s' @ %s: %.3f", job.title, job.company, sim)
+            except Exception as exc:
+                logger.warning("Embedding failed for %s, falling through to AI: %s", job.job_id, exc)
+                sim = 1.0
+
+            if sim < EMBEDDING_THRESHOLD:
+                update_stage(job.job_id, "embedding_fail")
+                logger.info("Skipping '%s' @ %s - embedding score %.3f below threshold", job.title, job.company, sim)
+                continue
+
             try:
                 result = evaluate(job)
                 total_evaluated += 1
@@ -128,7 +144,7 @@ def main(event: dict[str, Any], context: Any) -> dict[str, Any]:
                 except Exception as exc:
                     logger.error("Error sending Slack notification for %s: %s", job.job_id, exc)
 
-            save_evaluation(job, result)
+            save_evaluation(job, result, sim)
 
     summary = {
         "fetched": total_fetched,

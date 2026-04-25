@@ -1,4 +1,4 @@
-.PHONY: deploy invoke-local logs tail-logs scan-table add-company build clean
+.PHONY: deploy invoke-local logs tail-logs scan-table add-company build clean embed-profile
 
 STACK_NAME   := job-search-automation
 REGION       := us-east-1
@@ -101,6 +101,12 @@ auth-google:
 
 add-company:
 	@echo "Edit config/companies.yaml, then run: make deploy"
+
+
+# ── Embed profile (re-run after editing config/profile.txt) ──────────────
+
+embed-profile:
+	python scripts/embed_profile.py
 
 # ── Cleanup ───────────────────────────────────────────────────────────────
 

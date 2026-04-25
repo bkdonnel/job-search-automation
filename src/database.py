@@ -59,7 +59,7 @@ def update_stage(job_id: str, stage: str) -> None:
     )
 
 
-def save_evaluation(job: Job, evaluation: AIEvaluation) -> None:
+def save_evaluation(job: Job, evaluation: AIEvaluation, embedding_score: float | None = None) -> None:
     """Update the job record with AI evaluation results."""
     table = _get_table()
     now = datetime.now(tz=timezone.utc).isoformat()
@@ -82,6 +82,11 @@ def save_evaluation(job: Job, evaluation: AIEvaluation) -> None:
         ":concerns": evaluation.concerns,
         ":notified_at": now if stage == "notified" else None,
     }
+
+    if embedding_score is not None:
+        update_expr += ", embedding_score = :emb"
+        expr_values[":emb"] = str(round(embedding_score, 4))
+
     table.update_item(
         Key={"job_id": job.job_id},
         UpdateExpression=update_expr,
