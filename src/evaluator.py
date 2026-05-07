@@ -53,7 +53,14 @@ Rules:
 Return ONLY valid JSON, no markdown fences."""
 
 
-def evaluate(job: Job) -> AIEvaluation:
+def _get_system_prompt() -> str:
+    optimized_path = Path(__file__).parent.parent / "config" / "optimized_system_prompt.txt"
+    if optimized_path.exists():
+        return optimized_path.read_text().strip()
+    return _SYSTEM_PROMPT
+
+
+def evaluate(job: Job) -> tuple[AIEvaluation, object]:
     """Run gpt-4o-mini fit evaluation for a single job."""
     profile = _get_profile()
     jd_truncated = _truncate(job.description_text, JD_MAX_WORDS)
@@ -70,7 +77,7 @@ Location: {job.location} {'(Remote)' if job.is_remote else ''}
     response = client.chat.completions.create(
         model=MODEL,
         messages=[
-            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "system", "content": _get_system_prompt()},
             {"role": "user", "content": user_content},
         ],
         temperature=0,
@@ -97,4 +104,4 @@ Location: {job.location} {'(Remote)' if job.is_remote else ''}
         match_reasons=data.get("match_reasons", []),
         concerns=data.get("concerns", []),
         verdict=verdict,
-    )
+    ), response.usage

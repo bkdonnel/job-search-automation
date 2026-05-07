@@ -73,3 +73,8 @@ notifications:
   notify_verdicts:
     - "apply"
     - "borderline"
+
+rerank:
+  enabled: true
+  top_n: 10         # evaluate only the top N candidates per run
+  min_candidates: 4 # only rerank if more than this many passed the embedding filter

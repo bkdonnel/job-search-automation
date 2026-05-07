@@ -26,6 +26,21 @@ Resources:
         AttributeName: ttl
         Enabled: true
 
+  EvaluationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: evaluations
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: eval_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: eval_id
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
   # ── IAM Role ──────────────────────────────────────────────────────────────
   LambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -52,7 +67,9 @@ Resources:
                   - dynamodb:UpdateItem
                   - dynamodb:Query
                   - dynamodb:Scan
-                Resource: !GetAtt JobsTable.Arn
+                Resource:
+                  - !GetAtt JobsTable.Arn
+                  - !GetAtt EvaluationsTable.Arn
               - Effect: Allow
                 Action:
                   - ssm:GetParameter
@@ -70,6 +87,7 @@ Resources:
       Environment:
         Variables:
           DYNAMODB_TABLE: !Ref JobsTable
+          EVALUATIONS_TABLE: !Ref EvaluationsTable
       Events:
         ScheduledPoll:
           Type: ScheduleV2

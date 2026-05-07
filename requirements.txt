@@ -4,8 +4,9 @@ pydantic>=2.0
 PyYAML>=6.0
 requests>=2.31
 tenacity>=8.2
-# Local only — MCP server and Google Drive/Gmail integration (not deployed to Lambda)
+# Local only — MCP server, Google Drive/Gmail integration, and prompt optimization (not deployed to Lambda)
 mcp[cli]>=1.0
+dspy-ai>=2.4
 google-api-python-client>=2.100
 google-auth-oauthlib>=1.1
 google-auth-httplib2>=0.2

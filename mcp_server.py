@@ -1,15 +1,16 @@
 """Project management MCP server for job-search-automation.
 
 Tools exposed to Claude Code:
-  - add_company      — validate board token + append to companies.yaml
-  - list_jobs        — query DynamoDB with optional filters
-  - search_jobs      — semantic similarity search across stored job embeddings
-  - get_job_details  — full job record including JD text (for resume tailoring)
-  - get_stats        — pipeline counts by stage and verdict
-  - trigger_scan     — invoke the Lambda scanner immediately
-  - read_drive_file  — read a file from the Google Drive job search folder
-  - create_drive_doc — create a new Google Doc in the Drive folder
-  - send_email       — send an email to donnelly.bryand@gmail.com via Gmail SMTP
+  - add_company        — validate board token + append to companies.yaml
+  - list_jobs          — query DynamoDB with optional filters
+  - list_evaluations   — query evaluation traces (verdict, token counts, cost, reasons)
+  - search_jobs        — semantic similarity search across stored job embeddings
+  - get_job_details    — full job record including JD text (for resume tailoring)
+  - get_stats          — pipeline counts by stage and verdict
+  - trigger_scan       — invoke the Lambda scanner immediately
+  - read_drive_file    — read a file from the Google Drive job search folder
+  - create_drive_doc   — create a new Google Doc in the Drive folder
+  - send_email         — send an email to donnelly.bryand@gmail.com via Gmail SMTP
 """
 from __future__ import annotations
 
@@ -34,6 +35,13 @@ FUNCTION_NAME = "job-search-automation"
 DRIVE_FOLDER_ID = "1CCY1NFNnoeylWDtEBQ3rv2UCofcoCKIh"
 EMAIL_ADDRESS = "donnelly.bryand@gmail.com"
 DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive"]
+
+EVALUATIONS_TABLE_NAME = "evaluations"
+
+
+def _evaluations_table():
+    return boto3.resource("dynamodb", region_name=REGION).Table(EVALUATIONS_TABLE_NAME)
+
 
 BOARD_URLS = {
     "greenhouse": "https://boards-api.greenhouse.io/v1/boards/{token}/jobs",
@@ -179,6 +187,63 @@ def get_stats() -> str:
         },
         indent=2,
     )
+
+
+@mcp.tool()
+def list_evaluations(
+    verdict: Optional[str] = None,
+    company: Optional[str] = None,
+    limit: int = 20,
+) -> str:
+    """List AI evaluation traces from the evaluations table, most recent first.
+
+    Each record captures: job, model, token counts, cost, embedding score,
+    fit score, verdict, match reasons, and concerns.
+
+    verdict: filter by verdict — apply, borderline, or skip
+    company: filter by company name (exact match)
+    limit:   max results (default 20)
+
+    Use this to audit why specific jobs were scored the way they were,
+    or to spot evaluator drift over time.
+    """
+    from boto3.dynamodb.conditions import Attr
+
+    filter_expr = None
+
+    def _and(expr, new):
+        return new if expr is None else expr & new
+
+    if verdict:
+        filter_expr = _and(filter_expr, Attr("verdict").eq(verdict))
+    if company:
+        filter_expr = _and(filter_expr, Attr("company").eq(company))
+
+    kwargs: dict = {
+        "ProjectionExpression": (
+            "eval_id, job_id, company, title, evaluated_at, model, "
+            "input_tokens, output_tokens, cost_usd, embedding_score, "
+            "fit_score, verdict, match_reasons, concerns"
+        ),
+    }
+    if filter_expr:
+        kwargs["FilterExpression"] = filter_expr
+
+    items: list = []
+    table = _evaluations_table()
+    resp = table.scan(**kwargs)
+    items.extend(resp.get("Items", []))
+    while "LastEvaluatedKey" in resp and len(items) < limit * 3:
+        resp = table.scan(ExclusiveStartKey=resp["LastEvaluatedKey"], **kwargs)
+        items.extend(resp.get("Items", []))
+
+    items.sort(key=lambda x: x.get("evaluated_at", ""), reverse=True)
+    items = items[:limit]
+
+    if not items:
+        return "No evaluation traces found. Traces are written after each Lambda scan."
+
+    return json.dumps(items, default=str, indent=2)
 
 
 @mcp.tool()

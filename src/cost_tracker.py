@@ -45,6 +45,12 @@ def record(model: str, usage: object) -> None:
     entry.cost_usd += (input_tokens * pricing["input"] + output_tokens * pricing["output"]) / 1_000_000
 
 
+def estimate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
+    """Return estimated cost in USD for a single model call."""
+    pricing = _PRICING.get(model, {"input": 0.0, "output": 0.0})
+    return (input_tokens * pricing["input"] + output_tokens * pricing["output"]) / 1_000_000
+
+
 def log_summary(logger: logging.Logger) -> None:
     """Emit one structured cost summary line to CloudWatch."""
     if not _usage:

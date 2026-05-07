@@ -15,9 +15,12 @@ from .boards.ashby import AshbyClient
 from .database import is_seen, save_job, update_stage, save_evaluation
 from .embedder import score_job
 from .evaluator import evaluate
+from . import evaluator
 from .filter import keyword_filter
 from .models import Job
 from .notifier import notify
+from .reranker import rerank_candidates
+from .tracer import save_trace
 from . import cost_tracker
 
 logger = logging.getLogger(__name__)
@@ -75,6 +78,9 @@ def main(event: dict[str, Any], context: Any) -> dict[str, Any]:
     total_evaluated = 0
     total_notified = 0
 
+    # Phase 1: fetch, dedup, keyword filter, and embed across all companies
+    embedding_candidates: list[tuple[Job, float, list[float] | None]] = []
+
     for company in companies:
         name = company["name"]
         board_type = company["board_type"]
@@ -90,7 +96,6 @@ def main(event: dict[str, Any], context: Any) -> dict[str, Any]:
             logger.error("Error fetching jobs for %s: %s", name, exc)
             continue
 
-        # Dedup: keep only jobs we haven't seen before
         new_jobs: list[Job] = []
         for job in jobs:
             if not is_seen(job.job_id):
@@ -103,18 +108,15 @@ def main(event: dict[str, Any], context: Any) -> dict[str, Any]:
         if not new_jobs:
             continue
 
-        # Stage 1: keyword pre-filter
-        candidates = keyword_filter(new_jobs)
-        logger.info("%d/%d passed keyword filter for %s", len(candidates), len(new_jobs), name)
+        keyword_candidates = keyword_filter(new_jobs)
+        logger.info("%d/%d passed keyword filter for %s", len(keyword_candidates), len(new_jobs), name)
 
         for job in new_jobs:
-            if job not in candidates:
+            if job not in keyword_candidates:
                 update_stage(job.job_id, "keyword_fail")
 
-        # Stage 2: AI evaluation
-        for job in candidates:
+        for job in keyword_candidates:
             update_stage(job.job_id, "keyword_pass")
-
             try:
                 sim, job_embedding = score_job(job.description_text)
                 logger.info("Embedding score for '%s' @ %s: %.3f", job.title, job.company, sim)
@@ -124,29 +126,51 @@ def main(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
             if sim < EMBEDDING_THRESHOLD:
                 update_stage(job.job_id, "embedding_fail")
-                logger.info("Skipping '%s' @ %s - embedding score %.3f below threshold", job.title, job.company, sim)
+                logger.info("Skipping '%s' @ %s - embedding %.3f below threshold", job.title, job.company, sim)
                 continue
 
+            embedding_candidates.append((job, sim, job_embedding))
+
+    # Phase 2: rerank if we have more candidates than the configured top_n
+    final_candidates, reranked_out = rerank_candidates(embedding_candidates)
+
+    for job in reranked_out:
+        update_stage(job.job_id, "rerank_fail")
+        logger.info("Reranked out '%s' @ %s", job.title, job.company)
+
+    if reranked_out:
+        logger.info(
+            "Reranking: kept %d/%d candidates for evaluation",
+            len(final_candidates), len(embedding_candidates),
+        )
+
+    # Phase 3: evaluate final candidates
+    for job, sim, job_embedding in final_candidates:
+        try:
+            result, usage = evaluate(job)
+            total_evaluated += 1
+            logger.info(
+                "Evaluated '%s' @ %s: score=%d verdict=%s",
+                job.title, job.company, result.fit_score, result.verdict,
+            )
+        except Exception as exc:
+            logger.error("Error evaluating job %s: %s", job.job_id, exc)
+            continue
+
+        try:
+            save_trace(job, result, usage, evaluator.MODEL, sim)
+        except Exception as exc:
+            logger.warning("Failed to save trace for %s: %s", job.job_id, exc)
+
+        if result.verdict in ("apply", "borderline"):
             try:
-                result = evaluate(job)
-                total_evaluated += 1
-                logger.info(
-                    "Evaluated '%s' @ %s: score=%d verdict=%s",
-                    job.title, job.company, result.fit_score, result.verdict,
-                )
+                notify(job, result)
+                total_notified += 1
+                logger.info("Notified for %s @ %s", job.title, job.company)
             except Exception as exc:
-                logger.error("Error evaluating job %s: %s", job.job_id, exc)
-                continue
+                logger.error("Error sending Slack notification for %s: %s", job.job_id, exc)
 
-            if result.verdict in ("apply", "borderline"):
-                try:
-                    notify(job, result)
-                    total_notified += 1
-                    logger.info("Notified for %s @ %s", job.title, job.company)
-                except Exception as exc:
-                    logger.error("Error sending Slack notification for %s: %s", job.job_id, exc)
-
-            save_evaluation(job, result, sim, job_embedding)
+        save_evaluation(job, result, sim, job_embedding)
 
     summary = {
         "fetched": total_fetched,
