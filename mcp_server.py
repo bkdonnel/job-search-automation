@@ -3,6 +3,7 @@
 Tools exposed to Claude Code:
   - add_company      — validate board token + append to companies.yaml
   - list_jobs        — query DynamoDB with optional filters
+  - search_jobs      — semantic similarity search across stored job embeddings
   - get_job_details  — full job record including JD text (for resume tailoring)
   - get_stats        — pipeline counts by stage and verdict
   - trigger_scan     — invoke the Lambda scanner immediately
@@ -178,6 +179,75 @@ def get_stats() -> str:
         },
         indent=2,
     )
+
+
+@mcp.tool()
+def search_jobs(query: str, limit: int = 10) -> str:
+    """Find jobs semantically similar to a natural language query.
+
+    Embeds the query and ranks stored job embeddings by cosine similarity.
+    Only jobs that passed the embedding filter have stored embeddings.
+
+    Examples:
+      "find jobs similar to the Stripe analytics engineer role"
+      "show me roles focused on dbt and Snowflake"
+      "which companies posted data engineer jobs in San Diego"
+    """
+    import math
+    from boto3.dynamodb.conditions import Attr
+    from openai import OpenAI
+
+    ssm = boto3.client("ssm", region_name=REGION)
+    openai_key = ssm.get_parameter(Name="/jobsearch/openai_key", WithDecryption=True)["Parameter"]["Value"]
+
+    embed_resp = OpenAI(api_key=openai_key).embeddings.create(
+        model="text-embedding-3-small",
+        input=query,
+        dimensions=256,
+    )
+    query_vec = embed_resp.data[0].embedding
+
+    def _cosine(a: list[float], b: list[float]) -> float:
+        dot = sum(x * y for x, y in zip(a, b))
+        mag = math.sqrt(sum(x * x for x in a)) * math.sqrt(sum(x * x for x in b))
+        return dot / mag if mag else 0.0
+
+    table = _table()
+    items: list = []
+    scan_kwargs = {
+        "FilterExpression": Attr("job_embedding").exists(),
+        "ProjectionExpression": "job_id, company, title, #loc, ai_verdict, ai_score, #u, first_seen_at, job_embedding",
+        "ExpressionAttributeNames": {"#u": "url", "#loc": "location"},
+    }
+    resp = table.scan(**scan_kwargs)
+    items.extend(resp.get("Items", []))
+    while "LastEvaluatedKey" in resp:
+        resp = table.scan(ExclusiveStartKey=resp["LastEvaluatedKey"], **scan_kwargs)
+        items.extend(resp.get("Items", []))
+
+    if not items:
+        return "No jobs with stored embeddings found. Run `trigger_scan` to process new jobs, then try again."
+
+    scored = []
+    for item in items:
+        raw = item.get("job_embedding")
+        if not raw:
+            continue
+        job_vec = json.loads(raw)
+        scored.append({
+            "similarity": round(_cosine(query_vec, job_vec), 4),
+            "job_id": item.get("job_id"),
+            "company": item.get("company"),
+            "title": item.get("title"),
+            "location": item.get("location"),
+            "ai_verdict": item.get("ai_verdict"),
+            "ai_score": str(item.get("ai_score", "")),
+            "url": item.get("url"),
+            "first_seen_at": item.get("first_seen_at"),
+        })
+
+    scored.sort(key=lambda x: x["similarity"], reverse=True)
+    return json.dumps(scored[:limit], default=str, indent=2)
 
 
 @mcp.tool()

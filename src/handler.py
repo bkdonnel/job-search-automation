@@ -18,6 +18,7 @@ from .evaluator import evaluate
 from .filter import keyword_filter
 from .models import Job
 from .notifier import notify
+from . import cost_tracker
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -65,6 +66,7 @@ def _load_companies() -> list[dict]:
 
 
 def main(event: dict[str, Any], context: Any) -> dict[str, Any]:
+    cost_tracker.reset()
     _load_secrets()
     companies = _load_companies()
 
@@ -114,11 +116,11 @@ def main(event: dict[str, Any], context: Any) -> dict[str, Any]:
             update_stage(job.job_id, "keyword_pass")
 
             try:
-                sim = score_job(job.description_text)
+                sim, job_embedding = score_job(job.description_text)
                 logger.info("Embedding score for '%s' @ %s: %.3f", job.title, job.company, sim)
             except Exception as exc:
                 logger.warning("Embedding failed for %s, falling through to AI: %s", job.job_id, exc)
-                sim = 1.0
+                sim, job_embedding = 1.0, None
 
             if sim < EMBEDDING_THRESHOLD:
                 update_stage(job.job_id, "embedding_fail")
@@ -144,7 +146,7 @@ def main(event: dict[str, Any], context: Any) -> dict[str, Any]:
                 except Exception as exc:
                     logger.error("Error sending Slack notification for %s: %s", job.job_id, exc)
 
-            save_evaluation(job, result, sim)
+            save_evaluation(job, result, sim, job_embedding)
 
     summary = {
         "fetched": total_fetched,
@@ -153,4 +155,5 @@ def main(event: dict[str, Any], context: Any) -> dict[str, Any]:
         "notified": total_notified,
     }
     logger.info("Run complete: %s", summary)
+    cost_tracker.log_summary(logger)
     return summary

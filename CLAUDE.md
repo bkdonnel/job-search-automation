@@ -78,7 +78,9 @@ src/
   models.py        # Pydantic: Job, AIEvaluation
   filter.py        # Stage 1 keyword pre-filter
   evaluator.py     # Stage 2 gpt-4o-mini evaluation
-  database.py      # DynamoDB read/write (stores description_text for resume tailoring)
+  embedder.py      # Embedding similarity — returns (score, vector) tuple; vector persisted to DynamoDB
+  database.py      # DynamoDB read/write (stores description_text, job_embedding for search)
+  cost_tracker.py  # Tracks OpenAI token usage and cost per Lambda run; logs COST_SUMMARY to CloudWatch
   notifier.py      # Slack Block Kit webhook
   boards/
     base.py        # Abstract BoardClient with tenacity retry
@@ -94,7 +96,7 @@ infrastructure/
   template.yaml    # AWS SAM template
 scripts/
   auth_google.py   # One-time Google Drive OAuth (generates token.json)
-mcp_server.py      # Local MCP server for Claude Code
+mcp_server.py      # Local MCP server for Claude Code (9 tools)
 Makefile           # deploy, invoke, logs, secrets setup
 requirements.txt
 .env.example
@@ -105,9 +107,10 @@ token.json         # Google OAuth token (gitignored)
 ## DynamoDB Schema
 Table name: `jobs`
 - PK: `job_id` — `"{board}:{company_token}:{raw_id}"`
-- Attributes: `board`, `company`, `company_token`, `title`, `location`, `url`, `description_text`, `first_seen_at`, `stage`, `ai_score`, `ai_verdict`, `ai_reasons`, `ai_concerns`, `notified_at`, `ttl`
-- `stage` values: `seen` → `keyword_pass` / `keyword_fail` → `notified` / `skipped`
-- Note: `description_text` and `company_token` were added — jobs seen before this change won't have these fields
+- Attributes: `board`, `company`, `company_token`, `title`, `location`, `url`, `description_text`, `first_seen_at`, `stage`, `ai_score`, `ai_verdict`, `ai_reasons`, `ai_concerns`, `embedding_score`, `job_embedding`, `notified_at`, `ttl`
+- `stage` values: `seen` → `keyword_pass` / `keyword_fail` / `embedding_fail` → `notified` / `skipped`
+- `job_embedding` — 256-dim vector stored as JSON string; only present on jobs that passed the embedding threshold and were fully evaluated. Used by `search_jobs` MCP tool.
+- Note: `description_text`, `company_token`, and `job_embedding` were added incrementally — older records won't have these fields
 
 ## Secrets (stored in SSM Parameter Store)
 - `/jobsearch/openai_key` → `OPENAI_API_KEY`
@@ -136,6 +139,7 @@ make destroy            # tear down all AWS resources
 
 - `add_company(name, board_type, board_token)` — validate token + append to `companies.yaml`. Always run this instead of editing the file manually.
 - `list_jobs(limit, verdict, company, stage)` — query DynamoDB with optional filters
+- `search_jobs(query, limit)` — semantic similarity search across stored job embeddings (e.g. "find jobs like the Stripe analytics engineer role")
 - `get_job_details(company, title)` — full job record including JD text, used before resume tailoring
 - `get_stats()` — pipeline counts by stage and AI verdict
 - `trigger_scan()` — invoke Lambda immediately (async, check logs after ~30s)
@@ -191,27 +195,49 @@ Runtime: Python 3.12
 
 ## Potential Improvements (from ai-application-october-2025 repo)
 
-### Idea 1: Semantic Embedding-Based Job Matching
-Instead of (or before) calling gpt-4o-mini, use OpenAI embeddings to score job-profile similarity. The approach:
-1. At deploy time, generate an embedding of `config/profile.txt` and store it in SSM
-2. In Lambda, for each job that passes the keyword filter, generate an embedding of `description_text`
-3. Compute cosine similarity in Python — no external service needed
-4. Use the similarity score as a fast pre-filter: only send high-similarity jobs to gpt-4o-mini
+Prioritized by effort vs. value. Ideas sourced from cross-referencing with the ai-application-october-2025 recruiting platform repo.
 
-**No vector database needed.** DynamoDB can store the embedding vectors as a list attribute, and cosine similarity is a simple dot product computed in-memory in Lambda. The profile embedding lives in SSM and is loaded once per Lambda cold start.
+### 1. Cost Analytics Middleware — LOW EFFORT / HIGH VALUE
+**Status: done**
+`src/cost_tracker.py` — module-level accumulator with `reset()`, `record(model, usage)`, and `log_summary(logger)`. Called in `evaluator.py` and `embedder.py` after every OpenAI response. `handler.py` resets at the start of each invocation and emits a `COST_SUMMARY` CloudWatch log line at the end with per-model token counts and dollar cost.
 
-**Cost impact: near zero.** OpenAI `text-embedding-3-small` costs $0.02 per 1M tokens. A job description is ~500 tokens, so each embedding costs ~$0.000010 — about 20x cheaper than a gpt-4o-mini call. If this pre-filter eliminates even 30% of gpt-4o-mini calls, it saves money overall. Total embedding cost would be well under $0.50/month.
+**Why:** The $0.02/day estimate is unverified. Real visibility into per-invocation spend surfaces drift before it becomes a bill surprise.
 
-**Main benefit:** More nuanced matching than keyword filtering but cheaper than AI evaluation. Could catch good matches that keyword filtering misses, and skip borderline ones before they hit gpt-4o-mini.
+### 2. Semantic Job Search MCP Tool — LOW EFFORT / HIGH VALUE
+**Status: done**
+`embedder.py` now returns `(similarity, embedding)` tuple. The embedding is persisted to DynamoDB as a JSON string in the `job_embedding` attribute via `save_evaluation()`. `mcp_server.py` has a new `search_jobs(query, limit=10)` tool that embeds the query, scans DynamoDB for jobs with stored embeddings, ranks by cosine similarity, and returns the top N. Only jobs processed after deploy will have embeddings.
 
-### Idea 2: LLM Cost Tracking per Lambda Invocation
-Add a middleware/wrapper around every OpenAI call that logs token counts and estimated cost to CloudWatch. Would give visibility into actual spend per run rather than rough estimates. Implementation: wrap `evaluator.py` to capture `usage` from the OpenAI response object and emit a structured CloudWatch log line.
+**Why:** `list_jobs` only supports exact field filtering. Semantic search enables queries like "find jobs similar to the Stripe Analytics Engineer role."
 
-### Idea 3: Prompt Optimization with DSPy
-Build a small labeled dataset of jobs (apply/skip ground truth from past Slack notifications) and use DSPy's BootstrapFewShot or MIPRO optimizer to auto-tune the gpt-4o-mini evaluation prompt in `evaluator.py`. Could meaningfully improve verdict accuracy without manual prompt tweaking.
+### 3. Tracing / Structured Decision Logging — LOW EFFORT / MEDIUM VALUE
+**Status: not started**
+Log each AI decision to DynamoDB with full context: job_id, model used, tokens consumed, input prompt snapshot, verdict, score. Modeled after `middleware_tracing.py` in ai-application-october-2025. CloudWatch logs are ephemeral and hard to query; DynamoDB records are queryable and persistent.
 
-### Idea 4: Automated PR Review via GitHub Actions
-Add a `.github/workflows/llm-code-review.yml` workflow that triggers on pull requests and uses GPT-4 to review changes before deploy. Useful catch for issues in Lambda code changes (e.g. broken filter logic, bad DynamoDB writes) before they hit production.
+**Why:** Makes it easy to audit why specific jobs were scored the way they were and catch evaluator drift over time.
+
+### 4. GPT Reranking Before Full Evaluation — LOW EFFORT / MEDIUM VALUE
+**Status: not started**
+After the embedding similarity step, batch the surviving candidates per Lambda run and ask GPT to rank them by fit against the profile before running full gpt-4o-mini evaluations. Only evaluate the top N. Modeled after `rerank_results_gpt()` in `main.py` of ai-application-october-2025.
+
+**Why:** On high-volume days, reranking is cheaper than running full evaluations on every embedding-passing job.
+
+### 5. Evaluation Framework — MEDIUM EFFORT / HIGH VALUE
+**Status: not started**
+Export 50-100 past DynamoDB records that have been manually reviewed as ground-truth labels. Build a test harness (modeled after `evaluate_database_agent.py`) that runs the evaluator against this dataset and measures accuracy. Use results to tune `apply_threshold` and `borderline_threshold` in `settings.yaml` with data rather than intuition.
+
+**Why:** Current thresholds (7 for apply, 5 for borderline) are hand-tuned with no measurement of false positive/negative rates.
+
+### 6. DSPy Prompt Optimization — MEDIUM EFFORT / HIGH VALUE
+**Status: not started**
+Use the labeled dataset from Idea 5 as training data for DSPy's BootstrapFewShot or MIPROv2 to auto-optimize the evaluator system prompt in `evaluator.py`. Modeled after `optimize_database_agent_prompt.py` in ai-application-october-2025.
+
+**Why:** Hand-written prompts leave accuracy on the table. DSPy can find phrasings and few-shot examples that measurably improve verdict quality without manual iteration.
+
+### 7. Upgrade Evaluator to Claude — LOW EFFORT / MEDIUM VALUE
+**Status: not started**
+Swap `gpt-4o-mini` in `evaluator.py` for `claude-haiku-4-5-20251001`. Similar price point, but Claude tends to follow structured JSON output instructions more reliably — which matters for the verdict format.
+
+**Why:** The current evaluator occasionally returns malformed JSON or ignores the score-to-verdict normalization. Worth A/B testing once the evaluation framework (Idea 5) is in place to measure the difference objectively.
 
 ## Known Issues
 - **Linear, Vercel (Ashby)** — returning 0 jobs. APIs respond with 200 but no postings. Tokens are valid; these companies may simply not have open roles at the moment.

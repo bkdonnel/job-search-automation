@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import time
 from datetime import datetime, timezone
@@ -59,7 +60,7 @@ def update_stage(job_id: str, stage: str) -> None:
     )
 
 
-def save_evaluation(job: Job, evaluation: AIEvaluation, embedding_score: float | None = None) -> None:
+def save_evaluation(job: Job, evaluation: AIEvaluation, embedding_score: float | None = None, job_embedding: list[float] | None = None) -> None:
     """Update the job record with AI evaluation results."""
     table = _get_table()
     now = datetime.now(tz=timezone.utc).isoformat()
@@ -86,6 +87,10 @@ def save_evaluation(job: Job, evaluation: AIEvaluation, embedding_score: float |
     if embedding_score is not None:
         update_expr += ", embedding_score = :emb"
         expr_values[":emb"] = str(round(embedding_score, 4))
+
+    if job_embedding is not None:
+        update_expr += ", job_embedding = :emb_vec"
+        expr_values[":emb_vec"] = json.dumps(job_embedding)
 
     table.update_item(
         Key={"job_id": job.job_id},

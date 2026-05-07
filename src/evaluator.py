@@ -7,6 +7,7 @@ from pathlib import Path
 from openai import OpenAI
 
 from .models import Job, AIEvaluation
+from . import cost_tracker
 
 _client: OpenAI | None = None
 _profile: str | None = None
@@ -76,6 +77,8 @@ Location: {job.location} {'(Remote)' if job.is_remote else ''}
         max_tokens=256,
         response_format={"type": "json_object"},
     )
+
+    cost_tracker.record(MODEL, response.usage)
 
     raw = response.choices[0].message.content
     data = json.loads(raw)

@@ -7,6 +7,8 @@ import os
 import boto3
 from openai import OpenAI
 
+from . import cost_tracker
+
 EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_DIMS = 256
 SSM_PARAM = "/jobsearch/profile_embedding"
@@ -37,13 +39,14 @@ def _cosine(a: list[float], b: list[float]) -> float:
     return dot / mag if mag else 0.0
 
 
-def score_job(description_text: str) -> float:
-    """Return cosine similarity between job description and profile. Range: 0.0-1.0."""
+def score_job(description_text: str) -> tuple[float, list[float]]:
+    """Return (cosine_similarity, embedding) for a job description. Range: 0.0-1.0."""
     client = _get_client()
     resp = client.embeddings.create(
         model=EMBEDDING_MODEL,
         input=description_text[:8000],
         dimensions=EMBEDDING_DIMS,
     )
+    cost_tracker.record(EMBEDDING_MODEL, resp.usage)
     job_embedding = resp.data[0].embedding
-    return _cosine(_get_profile_embedding(), job_embedding)
+    return _cosine(_get_profile_embedding(), job_embedding), job_embedding
